@@ -50,7 +50,7 @@
 	}
 
 	$Select
-		= "SELECT FinEvent,GrPhase,GrMatchNo,FSTarget, FSScheduledDate, FSScheduledTime,Sq1Tar, Sq2Tar, IF(Sq1Quanti>Sq2Quanti, Sq1Quanti,Sq2Quanti) AS Quanti "
+		= "SELECT FinEvent,GrPhase,GrMatchNo,FSTarget, FSScheduledDate, FSScheduledTime,Sq1Tar, Sq2Tar, COALESCE(Sq1Quanti, Sq2Quanti, 0) AS Quanti "
 		. "FROM Events INNER JOIN Finals ON FinEvent=EvCode AND EvTeamEvent='0' AND EvTournament=" . StrSafe_DB($_SESSION['TourId']). " "
 		. "INNER JOIN Grids ON FinMatchNo=GrMatchNo AND GrPhase=" . StrSafe_DB($_REQUEST['d_Phase']) . " "
 		. "AND FinTournament=" . StrSafe_DB($_SESSION['TourId']) . " AND FinEvent=" . StrSafe_DB($_REQUEST['d_Event']) . " "
@@ -62,11 +62,11 @@
 		. "GROUP BY FSTarget, GrPhase "
 		. ") AS Sq1 ON FSTarget=Sq1Tar AND GrPhase=Sq1GrPhase "
 		. "LEFT JOIN ("
-		. "SELECT FSScheduledDate as Sq2FSScheduledDate, FSScheduledTime as Sq2FSScheduledTime, FSTarget AS Sq2Tar, COUNT(FSTarget) AS Sq2Quanti "
-		. "FROM FinSchedule "
+		. "SELECT FSScheduledDate as Sq2FSScheduledDate, FSScheduledTime as Sq2FSScheduledTime, FSTarget AS Sq2Tar, GrPhase AS Sq2GrPhase, COUNT(FSTarget) AS Sq2Quanti "
+		. "FROM FinSchedule INNER JOIN Grids ON FSMatchNo=GrMatchNo "
 		. "WHERE FSTarget<>'' AND FSScheduledDate!='0000-00-00'  AND FSTeamEvent='0' AND FSTournament=" . StrSafe_DB($_SESSION['TourId']) . " "
-		. "GROUP BY FSScheduledDate, FSScheduledTime, FSTarget "
-		. ") AS Sq2 ON FSTarget=Sq2Tar AND FSScheduledDate=Sq2FSScheduledDate AND FSScheduledTime=Sq2FSScheduledTime "
+		. "GROUP BY FSScheduledDate, FSScheduledTime, FSTarget, GrPhase "
+		. ") AS Sq2 ON FSTarget=Sq2Tar AND FSScheduledDate=Sq2FSScheduledDate AND FSScheduledTime=Sq2FSScheduledTime AND GrPhase=Sq2GrPhase "
 		. "WHERE FSTarget<>'' " . $TargetFilter
 		. "ORDER BY GrMatchNo ";
 	$Rs=safe_r_sql($Select);
